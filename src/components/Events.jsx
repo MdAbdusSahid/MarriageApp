@@ -6,22 +6,22 @@ const events = [
     Icon: CameraIcon,
     title: "Mehndi & Sangeet",
     time: "Dec 11, 2026 · 6:00 PM",
-    place: "The Rosewood Courtyard",
-    map: "https://maps.google.com",
+    place: "Lalgola, Murshidabad",
+    map: "https://www.google.com/maps/place/Lalgola,+West+Bengal+742148",
   },
   {
     Icon: RingsIcon,
     title: "The Ceremony",
     time: "Dec 12, 2026 · 4:00 PM",
-    place: "The Rosewood Garden Lawn",
-    map: "https://maps.google.com",
+    place: "Lalgola, Murshidabad",
+    map: "https://www.google.com/maps/place/Lalgola,+West+Bengal+742148",
   },
   {
     Icon: GlassIcon,
     title: "Reception",
     time: "Dec 12, 2026 · 8:00 PM",
-    place: "The Grand Ballroom",
-    map: "https://maps.google.com",
+    place: "Lalgola, Murshidabad",
+    map: "https://www.google.com/maps/place/Lalgola,+West+Bengal+742148",
   },
 ];
 
