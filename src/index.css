@@ -1,20 +1,41 @@
 :root {
-  /* Softer, more muted pastel palette */
-  --gold: #d3b978;
-  --gold-light: #eeddb6;
-  --gold-dark: #b89a5f;
-  --rose: #e0a9a4;
-  --blush: #f9f1ef;
-  --cream: #fcf9f4;
-  --ink: #5a504a;
-  --muted: #a79c92;
+  /* Royal Matte Blue + Baby Pink palette */
+  --royal-blue: #3d5a80;
+  --royal-blue-light: #5c7a9e;
+  --royal-blue-dark: #2c4a6e;
+  --pink: #f4a5b8;
+  --pink-light: #fcd5df;
+  --pink-soft: #fff0f3;
+  --cream: #fdfbf9;
+  --ink: #2c3e50;
+  --muted: #7a8b9a;
+  --white: #ffffff;
+
+  /* Legacy aliases for compatibility */
+  --gold: var(--royal-blue);
+  --gold-light: var(--royal-blue-light);
+  --gold-dark: var(--royal-blue-dark);
+  --rose: var(--pink);
+  --rose-light: var(--pink-light);
+  --blush: var(--pink-soft);
   --font-script: 'Great Vibes', cursive;
   --font-serif: 'Cormorant Garamond', serif;
   --font-sans: 'Montserrat', sans-serif;
 
-  /* Smooth, elegant easing curves */
+  /* Samsung OneUI-inspired easing curves - buttery smooth */
   --ease-soft: cubic-bezier(0.25, 0.8, 0.25, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decel: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accel: cubic-bezier(0.4, 0, 1, 1);
+  
+  /* Animation durations */
+  --duration-fast: 0.2s;
+  --duration-normal: 0.4s;
+  --duration-slow: 0.6s;
+  --duration-slower: 0.8s;
 }
 
 * {
@@ -49,17 +70,28 @@ img {
 }
 
 ::selection {
-  background: var(--gold-light);
-  color: #fff;
+  background: var(--pink-light);
+  color: var(--ink);
 }
 
+/* Custom scrollbar with smooth behavior */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--blush);
+  background: var(--pink-soft);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--gold);
+  background: linear-gradient(180deg, var(--royal-blue), var(--pink));
   border-radius: 10px;
+  transition: background 0.3s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--pink), var(--royal-blue));
+}
+
+/* Global focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 3px;
 }
