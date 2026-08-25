@@ -1,51 +1,118 @@
-// Simple JSON storage for guest data
-// Data is fetched from and saved via Vercel serverless function
+// Guest data storage using MongoDB via Vercel Function
 
 const GUESTS_API = "/api/guests";
 const CACHE_KEY = "wedding_guests_cache";
 const CACHE_TIMESTAMP_KEY = "wedding_guests_cache_timestamp";
-const CACHE_DURATION = 5000; // 5 seconds - reduced for faster updates
+const CACHE_DURATION = 10000; // 10 seconds cache
 
-// Fetch guests from localStorage
+// Fetch guests from API (MongoDB)
 export const getGuests = async () => {
   try {
-    const cachedData = localStorage.getItem(CACHE_KEY);
-    return cachedData ? JSON.parse(cachedData) : [];
+    // Check cache first
+    const cached = localStorage.getItem(CACHE_KEY);
+    const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+    
+    if (cached && timestamp) {
+      const age = Date.now() - parseInt(timestamp);
+      if (age < CACHE_DURATION) {
+        return JSON.parse(cached);
+      }
+    }
+    
+    // Fetch from API
+    const response = await fetch(GUESTS_API);
+    if (!response.ok) {
+      throw new Error('Failed to fetch guests');
+    }
+    
+    const data = await response.json();
+    const guests = Array.isArray(data) ? data : [];
+    
+    // Update cache
+    localStorage.setItem(CACHE_KEY, JSON.stringify(guests));
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+    
+    return guests;
   } catch (error) {
-    console.error("Error reading guests:", error);
-    return [];
+    console.error("Error fetching guests:", error);
+    
+    // Fallback to cached data if available
+    const cached = localStorage.getItem(CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
   }
 };
 
-// Save all guests (localStorage only for now - simple and reliable)
+// Save all guests to cache (for local updates)
 const saveGuests = async (guests) => {
   try {
-    console.log("Saving guests...", guests.length, "guests");
+    console.log("Updating cache...", guests.length, "guests");
 
-    // Save to localStorage
+    // Update cache immediately for responsiveness
     localStorage.setItem(CACHE_KEY, JSON.stringify(guests));
     localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
 
-    console.log("✅ Guests saved successfully");
+    console.log("✅ Cache updated");
     return true;
   } catch (error) {
-    console.error("Error saving guests:", error);
-    alert("⚠️ Could not save guest data.\n\nError: " + error.message);
+    console.error("Error updating cache:", error);
     return false;
   }
 };
 
 // Add a new guest
 export const addGuest = async (guestData) => {
-  const guests = await getGuests();
   const newGuest = {
     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     ...guestData,
     registeredAt: new Date().toISOString(),
   };
-  guests.push(newGuest);
-  await saveGuests(guests);
-  return newGuest;
+  
+  try {
+    console.log("🔄 Saving guest to MongoDB...", newGuest);
+    console.log("📍 API URL:", GUESTS_API);
+    console.log("🌐 Full URL:", window.location.origin + GUESTS_API);
+    
+    // Save to MongoDB via API
+    const response = await fetch(GUESTS_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newGuest),
+    });
+    
+    console.log("📡 Response status:", response.status, response.statusText);
+    
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error("❌ Response body:", responseText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = { error: responseText || 'Failed to save guest' };
+      }
+      
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log("✅ Guest saved to MongoDB!", result);
+    
+    // Update local cache
+    const guests = await getGuests();
+    const guestsArray = Array.isArray(guests) ? guests : [];
+    guestsArray.push(newGuest);
+    await saveGuests(guestsArray);
+    
+    // Clear cache timestamp to force refresh on next read
+    localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+    
+    return newGuest;
+  } catch (error) {
+    console.error('❌ Error adding guest:', error);
+    alert("⚠️ Could not save to database.\n\nError: " + error.message + "\n\nCheck browser console (F12) for details.");
+    throw error;
+  }
 };
 
 // Delete a guest by ID
