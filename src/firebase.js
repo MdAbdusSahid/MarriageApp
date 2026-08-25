@@ -26,6 +26,7 @@ const firebaseConfig = {
   storageBucket: "marriageapp-8e5ef.firebasestorage.app",
   messagingSenderId: "244310186035",
   appId: "1:244310186035:web:e11f826350a4161ad7ab46",
+  measurementId: "G-GV8DN4ENV3",
 };
 
 // Initialize Firebase
