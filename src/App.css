@@ -1441,6 +1441,148 @@
   opacity: 0.9;
 }
 
+.guest-phone {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--pink-light);
+  opacity: 0.9;
+  margin-top: 0.2rem;
+}
+
+.admin-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.btn-admin-login,
+.btn-admin-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(244, 165, 184, 0.3);
+  border-radius: 50px;
+  font-size: 0.85rem;
+  color: var(--pink-light);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-admin-login:hover,
+.btn-admin-logout:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(244, 165, 184, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-admin-logout {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #81c784;
+}
+
+.btn-admin-logout:hover {
+  background: rgba(76, 175, 80, 0.25);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+.password-prompt {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(244, 165, 184, 0.3);
+  border-radius: 16px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.password-prompt label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--pink-light);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.password-input-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.password-input-row input {
+  flex: 1;
+  min-width: 150px;
+  max-width: 200px;
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(244, 165, 184, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.password-input-row input:focus {
+  outline: none;
+  border-color: var(--pink-light);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-small {
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ccc;
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.password-error {
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(244, 165, 184, 0.3);
+  border-radius: 50px;
+  transition: all 0.3s ease;
+}
+
+.toggle-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(244, 165, 184, 0.5);
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pink-light);
+  cursor: pointer;
+}
+
+.toggle-text {
+  font-size: 0.85rem;
+  color: var(--pink-light);
+  letter-spacing: 0.5px;
+}
+
 .guest-count-badge {
   display: inline-block;
   padding: 0.3rem 0.9rem;
