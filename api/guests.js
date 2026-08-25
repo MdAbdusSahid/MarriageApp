@@ -2,13 +2,21 @@
 import fs from 'fs';
 import path from 'path';
 
-const guestsFilePath = path.join(process.cwd(), 'public', 'guests.json');
+// Use /tmp directory (writable in Vercel)
+const guestsFilePath = path.join('/tmp', 'guests.json');
 
 // Ensure the guests file exists
 function ensureGuestsFile() {
   try {
     if (!fs.existsSync(guestsFilePath)) {
-      fs.writeFileSync(guestsFilePath, JSON.stringify([], null, 2));
+      // Initialize with data from public/guests.json if available
+      const publicPath = path.join(process.cwd(), 'public', 'guests.json');
+      if (fs.existsSync(publicPath)) {
+        const initialData = fs.readFileSync(publicPath, 'utf8');
+        fs.writeFileSync(guestsFilePath, initialData);
+      } else {
+        fs.writeFileSync(guestsFilePath, JSON.stringify([], null, 2));
+      }
     }
   } catch (error) {
     console.error('Error ensuring guests file:', error);
