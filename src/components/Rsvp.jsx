@@ -1,20 +1,18 @@
 import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
 import { HeartIcon, Flourish } from "./Icons";
-import { db } from "../firebase";
 import {
-  collection,
-  addDoc,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  getDocs,
-  writeBatch,
-} from "firebase/firestore";
+  getGuests,
+  addGuest,
+  deleteGuest as deleteGuestFromStorage,
+  clearAllGuests as clearAllGuestsFromStorage,
+  exportGuestsJSON,
+  importGuestsJSON,
+  subscribeToChanges,
+} from "../storage";
 
 const ADMIN_KEY = "wedding_admin";
 const ADMIN_PASSWORD = "sahidwedding2026"; // Change this to your desired password
-const GUESTS_COLLECTION = "wedding_guests";
 
 // Helper functions to mask sensitive data
 const maskEmail = (email) => {
@@ -62,10 +60,8 @@ function GuestListModal({
 
   const handleAdminToggle = () => {
     if (isAdmin) {
-      // Logging out - no password needed
       onToggleAdmin();
     } else {
-      // Trying to enable admin - show password prompt
       setShowPasswordPrompt(true);
       setPasswordInput("");
       setPasswordError("");
@@ -86,16 +82,21 @@ function GuestListModal({
   };
 
   const downloadJSON = () => {
-    const dataStr = JSON.stringify(guests, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "wedding-guests.json";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    exportGuestsJSON();
+  };
+
+  const handleImportJSON = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importGuestsJSON(file)
+        .then((count) => {
+          alert(`Successfully imported ${count} guests`);
+          window.location.reload();
+        })
+        .catch((error) => {
+          alert(`Failed to import: ${error.message}`);
+        });
+    }
   };
 
   const displayEmail = (email) => (isAdmin ? email : maskEmail(email));
@@ -186,8 +187,17 @@ function GuestListModal({
               className="btn btn-download"
               onClick={downloadJSON}
             >
-              📥 Download JSON
+              📥 Export JSON
             </button>
+            <label className="btn btn-upload">
+              📤 Import JSON
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportJSON}
+                style={{ display: 'none' }}
+              />
+            </label>
             <button
               type="button"
               className="btn btn-danger"
@@ -244,7 +254,7 @@ function GuestListModal({
                               }}
                               title="Remove guest"
                             >
-                              X
+                              ×
                             </button>
                           )}
                         </div>
@@ -335,37 +345,28 @@ export default function Rsvp() {
   const [guests, setGuests] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Real-time sync with Firestore
+  // Load guests from localStorage and subscribe to changes
   useEffect(() => {
-    // Load admin status from localStorage (admin is local only)
+    // Load admin status from localStorage
     const adminStatus = localStorage.getItem(ADMIN_KEY);
     if (adminStatus === "true") {
       setIsAdmin(true);
     }
 
-    // Subscribe to Firestore guests collection for real-time updates
-    const unsubscribe = onSnapshot(
-      collection(db, GUESTS_COLLECTION),
-      (snapshot) => {
-        const guestsData = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        }));
-        // Sort by registeredAt descending (newest first)
-        guestsData.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
-        setGuests(guestsData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error fetching guests:", error);
-        alert("Error connecting to database. Check Firestore rules.");
-        setLoading(false);
-      }
-    );
+    // Load initial guests
+    const loadGuests = () => {
+      const guestsData = getGuests();
+      guestsData.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+      setGuests(guestsData);
+    };
 
-    // Cleanup subscription on unmount
+    loadGuests();
+
+    // Subscribe to changes (for cross-tab sync)
+    const unsubscribe = subscribeToChanges(loadGuests);
+
     return () => unsubscribe();
   }, []);
 
@@ -376,43 +377,41 @@ export default function Rsvp() {
     localStorage.setItem(ADMIN_KEY, newAdminStatus.toString());
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitting(true);
 
-    const newGuest = {
+    const newGuestData = {
       name,
       email,
       phone,
       attending,
       guestCount: Number.parseInt(guestCount, 10),
       message,
-      registeredAt: new Date().toISOString(),
     };
 
     try {
-      console.log("Attempting to add guest to Firestore...");
-      const docRef = await addDoc(collection(db, GUESTS_COLLECTION), newGuest);
-      console.log("Guest added successfully with ID:", docRef.id);
+      const newGuest = addGuest(newGuestData);
+      console.log("Guest added successfully with ID:", newGuest.id);
+      
+      // Update local state
+      const updatedGuests = getGuests();
+      updatedGuests.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+      setGuests(updatedGuests);
+      
       setSent(true);
     } catch (error) {
       console.error("Error adding guest:", error);
-      console.error("Error code:", error.code);
-      console.error("Error message:", error.message);
-      alert(`Failed to submit RSVP: ${error.code || error.message || "Check console for details"}`);
+      alert(`Failed to submit RSVP: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const clearAllGuests = async () => {
+  const clearAllGuests = () => {
     try {
-      const snapshot = await getDocs(collection(db, GUESTS_COLLECTION));
-      const batch = writeBatch(db);
-      snapshot.docs.forEach((docItem) => {
-        batch.delete(doc(db, GUESTS_COLLECTION, docItem.id));
-      });
-      await batch.commit();
+      clearAllGuestsFromStorage();
+      setGuests([]);
       setShowModal(false);
     } catch (error) {
       console.error("Error clearing guests:", error);
@@ -420,9 +419,10 @@ export default function Rsvp() {
     }
   };
 
-  const deleteGuest = async (guestId) => {
+  const deleteGuest = (guestId) => {
     try {
-      await deleteDoc(doc(db, GUESTS_COLLECTION, guestId));
+      deleteGuestFromStorage(guestId);
+      setGuests(guests.filter(g => g.id !== guestId));
     } catch (error) {
       console.error("Error deleting guest:", error);
       alert("Failed to remove guest. Please try again.");
@@ -460,9 +460,9 @@ export default function Rsvp() {
             Thank you{name ? `, ${name}` : ""}!
           </h3>
           <p style={{ color: "#e9e2d9" }}>
-            Your response has been received. We can’t wait to celebrate with
+            Your response has been received. We can't wait to celebrate with
             you.
-          </p>{" "}
+          </p>
           <button
             type="button"
             className="btn"
@@ -478,7 +478,7 @@ export default function Rsvp() {
             style={{ marginTop: "1.5rem" }}
           >
             Add Another Guest
-          </button>{" "}
+          </button>
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
