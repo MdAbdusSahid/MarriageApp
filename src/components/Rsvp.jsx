@@ -38,6 +38,7 @@ function GuestListModal({
   guests,
   onClose,
   onClearAll,
+  onDeleteGuest,
   isAdmin,
   onToggleAdmin,
 }) {
@@ -203,20 +204,43 @@ function GuestListModal({
                   <HeartIcon className="heading-icon" /> Attending
                 </h4>
                 <ul>
-                  {attending.map((guest) => (
+                  {attending.map((guest, index) => (
                     <li
                       key={guest.email + guest.registeredAt}
                       className="guest-item"
                       style={{
-                        animationDelay: `${attending.indexOf(guest) * 0.1}s`,
+                        animationDelay: `${index * 0.1}s`,
                       }}
                     >
                       <div className="guest-header">
                         <span className="guest-name">{guest.name}</span>
-                        <span className="guest-count-badge">
-                          {guest.guestCount} guest
-                          {guest.guestCount > 1 ? "s" : ""}
-                        </span>
+                        <div className="guest-header-right">
+                          <span className="guest-count-badge">
+                            {guest.guestCount} guest
+                            {guest.guestCount > 1 ? "s" : ""}
+                          </span>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              className="btn-delete-guest"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Remove ${guest.name} from the guest list?`,
+                                  )
+                                ) {
+                                  onDeleteGuest(
+                                    guest.email,
+                                    guest.registeredAt,
+                                  );
+                                }
+                              }}
+                              title="Remove guest"
+                            >
+                              X
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <span className="guest-email">
                         ✉ {displayEmail(guest.email)}
@@ -240,16 +264,34 @@ function GuestListModal({
                   Regretfully Declining
                 </h4>
                 <ul>
-                  {declining.map((guest) => (
+                  {declining.map((guest, index) => (
                     <li
                       key={guest.email + guest.registeredAt}
                       className="guest-item declined"
                       style={{
-                        animationDelay: `${(attending.length + declining.indexOf(guest)) * 0.1}s`,
+                        animationDelay: `${(attending.length + index) * 0.1}s`,
                       }}
                     >
                       <div className="guest-header">
                         <span className="guest-name">{guest.name}</span>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="btn-delete-guest"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Remove ${guest.name} from the guest list?`,
+                                )
+                              ) {
+                                onDeleteGuest(guest.email, guest.registeredAt);
+                              }
+                            }}
+                            title="Remove guest"
+                          >
+                            ×
+                          </button>
+                        )}
                       </div>
                       <span className="guest-email">
                         ✉ {displayEmail(guest.email)}
@@ -340,6 +382,13 @@ export default function Rsvp() {
   const clearAllGuests = () => {
     saveGuests([]);
     setShowModal(false);
+  };
+
+  const deleteGuest = (email, registeredAt) => {
+    const updatedGuests = guests.filter(
+      (g) => !(g.email === email && g.registeredAt === registeredAt),
+    );
+    saveGuests(updatedGuests);
   };
 
   return (
@@ -475,6 +524,7 @@ export default function Rsvp() {
           guests={guests}
           onClose={() => setShowModal(false)}
           onClearAll={clearAllGuests}
+          onDeleteGuest={deleteGuest}
           isAdmin={isAdmin}
           onToggleAdmin={toggleAdmin}
         />
