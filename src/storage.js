@@ -1,12 +1,12 @@
 // Simple JSON storage for guest data
-// Data is fetched from and saved to a public JSON file
+// Data is fetched from and saved via Vercel serverless function
 
-const GUESTS_URL = '/guests.json';
+const GUESTS_API = '/api/guests';
 const CACHE_KEY = 'wedding_guests_cache';
 const CACHE_TIMESTAMP_KEY = 'wedding_guests_cache_timestamp';
-const CACHE_DURATION = 30000; // 30 seconds
+const CACHE_DURATION = 5000; // 5 seconds - reduced for faster updates
 
-// Fetch guests from the JSON file
+// Fetch guests from the API
 export const getGuests = async () => {
   try {
     // Check cache first
@@ -18,8 +18,8 @@ export const getGuests = async () => {
       return JSON.parse(cachedData);
     }
     
-    // Fetch from server with cache busting
-    const response = await fetch(`${GUESTS_URL}?t=${now}`);
+    // Fetch from API with cache busting
+    const response = await fetch(`${GUESTS_API}?t=${now}`);
     if (!response.ok) {
       throw new Error('Failed to fetch guests');
     }
@@ -39,30 +39,42 @@ export const getGuests = async () => {
   }
 };
 
-// Save all guests to the JSON file (simulated - needs server-side implementation)
+// Save all guests via API
 const saveGuests = async (guests) => {
   try {
-    // In a real implementation, this would POST to a server endpoint
-    // For now, we'll use localStorage as a temporary solution
-    // and show a warning that this needs server-side implementation
+    console.log('Saving guests to server...', guests.length, 'guests');
     
-    console.warn('⚠️ Saving to JSON file requires server-side implementation');
-    console.log('Guest data to save:', guests);
+    // Send to API
+    const response = await fetch(GUESTS_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(guests),
+    });
     
-    // Cache the data locally
+    if (!response.ok) {
+      throw new Error(`Failed to save guests: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Guests saved successfully:', result);
+    
+    // Update cache
     localStorage.setItem(CACHE_KEY, JSON.stringify(guests));
     localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-    
-    // Show instructions to user
-    alert('⚠️ Important: To persist data across devices, you need to:\n\n' +
-          '1. Download the JSON file using the Export button\n' +
-          '2. Replace public/guests.json with the downloaded file\n' +
-          '3. Redeploy your website\n\n' +
-          'Alternatively, implement a server-side API to save the data automatically.');
     
     return true;
   } catch (error) {
     console.error('Error saving guests:', error);
+    // Fallback to local cache
+    localStorage.setItem(CACHE_KEY, JSON.stringify(guests));
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+    
+    alert('⚠️ Could not save to server. Data saved locally only.\n\n' +
+          'Error: ' + error.message + '\n\n' +
+          'Please check your internet connection and try again.');
+    
     return false;
   }
 };
@@ -92,7 +104,7 @@ export const clearAllGuests = async () => {
   return await saveGuests([]);
 };
 
-// Export guests as JSON file (for manual deployment)
+// Export guests as JSON file (backup purposes)
 export const exportGuestsJSON = async () => {
   const guests = await getGuests();
   const dataStr = JSON.stringify(guests, null, 2);
@@ -100,18 +112,15 @@ export const exportGuestsJSON = async () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'guests.json';
+  link.download = `guests-backup-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
   
-  alert('✅ Downloaded guests.json\n\n' +
-        'To update the website:\n' +
-        '1. Replace public/guests.json with this file\n' +
-        '2. Run: npm run build\n' +
-        '3. Redeploy your website\n\n' +
-        'All devices will then see the updated guest list!');
+  alert('✅ Backup downloaded!\n\n' +
+        'Guest data is now automatically saved to the server.\n' +
+        'This backup file is for your records.');
 };
 
 // Import guests from JSON file
@@ -139,14 +148,14 @@ export const importGuestsJSON = (file) => {
   });
 };
 
-// Poll for changes (check the JSON file periodically)
+// Poll for changes (check the API periodically)
 export const subscribeToChanges = (callback) => {
   let lastCheck = Date.now();
   
   const checkForUpdates = async () => {
     try {
       const now = Date.now();
-      if (now - lastCheck > 30000) { // Check every 30 seconds
+      if (now - lastCheck > 10000) { // Check every 10 seconds
         lastCheck = now;
         // Clear cache to force fetch
         localStorage.removeItem(CACHE_KEY);
@@ -159,7 +168,7 @@ export const subscribeToChanges = (callback) => {
     }
   };
   
-  const interval = setInterval(checkForUpdates, 30000);
+  const interval = setInterval(checkForUpdates, 10000);
   
   // Also listen for storage events (cross-tab)
   const storageHandler = (e) => {
