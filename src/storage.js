@@ -1,80 +1,36 @@
 // Simple JSON storage for guest data
 // Data is fetched from and saved via Vercel serverless function
 
-const GUESTS_API = '/api/guests';
-const CACHE_KEY = 'wedding_guests_cache';
-const CACHE_TIMESTAMP_KEY = 'wedding_guests_cache_timestamp';
+const GUESTS_API = "/api/guests";
+const CACHE_KEY = "wedding_guests_cache";
+const CACHE_TIMESTAMP_KEY = "wedding_guests_cache_timestamp";
 const CACHE_DURATION = 5000; // 5 seconds - reduced for faster updates
 
-// Fetch guests from the API
+// Fetch guests from localStorage
 export const getGuests = async () => {
   try {
-    // Check cache first
-    const cachedData = localStorage.getItem(CACHE_KEY);
-    const cacheTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
-    const now = Date.now();
-    
-    if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < CACHE_DURATION) {
-      return JSON.parse(cachedData);
-    }
-    
-    // Fetch from API with cache busting
-    const response = await fetch(`${GUESTS_API}?t=${now}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch guests');
-    }
-    
-    const guests = await response.json();
-    
-    // Update cache
-    localStorage.setItem(CACHE_KEY, JSON.stringify(guests));
-    localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString());
-    
-    return guests;
-  } catch (error) {
-    console.error('Error reading guests:', error);
-    // Return cached data if available, otherwise empty array
     const cachedData = localStorage.getItem(CACHE_KEY);
     return cachedData ? JSON.parse(cachedData) : [];
+  } catch (error) {
+    console.error("Error reading guests:", error);
+    return [];
   }
 };
 
-// Save all guests via API
+// Save all guests (localStorage only for now - simple and reliable)
 const saveGuests = async (guests) => {
   try {
-    console.log('Saving guests to server...', guests.length, 'guests');
-    
-    // Send to API
-    const response = await fetch(GUESTS_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(guests),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to save guests: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Guests saved successfully:', result);
-    
-    // Update cache
+    console.log("Saving guests...", guests.length, "guests");
+
+    // Save to localStorage
     localStorage.setItem(CACHE_KEY, JSON.stringify(guests));
     localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-    
+
+    console.log("✅ Guests saved successfully");
     return true;
   } catch (error) {
-    console.error('Error saving guests:', error);
-    // Fallback to local cache
-    localStorage.setItem(CACHE_KEY, JSON.stringify(guests));
-    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-    
-    alert('⚠️ Could not save to server. Data saved locally only.\n\n' +
-          'Error: ' + error.message + '\n\n' +
-          'Please check your internet connection and try again.');
-    
+    console.error("Error saving guests:", error);
+    alert("⚠️ Could not save guest data.\n\nError: " + error.message);
     return false;
   }
 };
@@ -95,7 +51,7 @@ export const addGuest = async (guestData) => {
 // Delete a guest by ID
 export const deleteGuest = async (guestId) => {
   const guests = await getGuests();
-  const filtered = guests.filter(g => g.id !== guestId);
+  const filtered = guests.filter((g) => g.id !== guestId);
   return await saveGuests(filtered);
 };
 
@@ -108,19 +64,21 @@ export const clearAllGuests = async () => {
 export const exportGuestsJSON = async () => {
   const guests = await getGuests();
   const dataStr = JSON.stringify(guests, null, 2);
-  const blob = new Blob([dataStr], { type: 'application/json' });
+  const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
-  link.download = `guests-backup-${new Date().toISOString().split('T')[0]}.json`;
+  link.download = `guests-backup-${new Date().toISOString().split("T")[0]}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-  
-  alert('✅ Backup downloaded!\n\n' +
-        'Guest data is now automatically saved to the server.\n' +
-        'This backup file is for your records.');
+
+  alert(
+    "✅ Backup downloaded!\n\n" +
+      "Guest data is saved in your browser.\n" +
+      "Keep this backup file for your records!",
+  );
 };
 
 // Import guests from JSON file
@@ -137,7 +95,7 @@ export const importGuestsJSON = (file) => {
           localStorage.removeItem(CACHE_TIMESTAMP_KEY);
           resolve(imported.length);
         } else {
-          reject(new Error('Invalid JSON format'));
+          reject(new Error("Invalid JSON format"));
         }
       } catch (error) {
         reject(error);
@@ -148,39 +106,19 @@ export const importGuestsJSON = (file) => {
   });
 };
 
-// Poll for changes (check the API periodically)
+// Listen for storage changes (cross-tab sync)
 export const subscribeToChanges = (callback) => {
-  let lastCheck = Date.now();
-  
-  const checkForUpdates = async () => {
-    try {
-      const now = Date.now();
-      if (now - lastCheck > 10000) { // Check every 10 seconds
-        lastCheck = now;
-        // Clear cache to force fetch
-        localStorage.removeItem(CACHE_KEY);
-        localStorage.removeItem(CACHE_TIMESTAMP_KEY);
-        const guests = await getGuests();
-        callback(guests);
-      }
-    } catch (error) {
-      console.error('Error checking for updates:', error);
-    }
-  };
-  
-  const interval = setInterval(checkForUpdates, 10000);
-  
-  // Also listen for storage events (cross-tab)
-  const storageHandler = (e) => {
+  // Listen for storage events from other tabs
+  const storageHandler = async (e) => {
     if (e.key === CACHE_KEY) {
-      checkForUpdates();
+      const guests = await getGuests();
+      callback(guests);
     }
   };
-  window.addEventListener('storage', storageHandler);
-  
+  window.addEventListener("storage", storageHandler);
+
   // Return unsubscribe function
   return () => {
-    clearInterval(interval);
-    window.removeEventListener('storage', storageHandler);
+    window.removeEventListener("storage", storageHandler);
   };
 };
