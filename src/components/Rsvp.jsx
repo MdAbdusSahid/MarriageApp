@@ -2,11 +2,77 @@ import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
 import { HeartIcon, Flourish } from "./Icons";
 
+const STORAGE_KEY = "wedding_guests";
+const ADMIN_KEY = "wedding_admin";
+const ADMIN_PASSWORD = "sahidwedding2026"; // Change this to your desired password
+
+// Helper functions to mask sensitive data
+const maskEmail = (email) => {
+  if (!email) return "";
+  const [localPart, domain] = email.split("@");
+  if (!domain) return "***@***.***";
+  const maskedLocal =
+    localPart.length > 2
+      ? localPart[0] +
+        "*".repeat(localPart.length - 2) +
+        localPart[localPart.length - 1]
+      : "*".repeat(localPart.length);
+  const domainParts = domain.split(".");
+  const maskedDomain = domainParts
+    .map((part, i) =>
+      i === domainParts.length - 1 ? part : "*".repeat(part.length),
+    )
+    .join(".");
+  return `${maskedLocal}@${maskedDomain}`;
+};
+
+const maskPhone = (phone) => {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length <= 4) return "*".repeat(digits.length);
+  return "*".repeat(digits.length - 4) + digits.slice(-4);
+};
+
 // Guest List Modal Component
-function GuestListModal({ guests, onClose, onClearAll }) {
+function GuestListModal({
+  guests,
+  onClose,
+  onClearAll,
+  isAdmin,
+  onToggleAdmin,
+}) {
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   const attending = guests.filter((g) => g.attending === "yes");
   const declining = guests.filter((g) => g.attending === "no");
   const totalGuests = attending.reduce((sum, g) => sum + g.guestCount, 0);
+
+  const handleAdminToggle = () => {
+    if (isAdmin) {
+      // Logging out - no password needed
+      onToggleAdmin();
+    } else {
+      // Trying to enable admin - show password prompt
+      setShowPasswordPrompt(true);
+      setPasswordInput("");
+      setPasswordError("");
+    }
+  };
+
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      onToggleAdmin();
+      setShowPasswordPrompt(false);
+      setPasswordInput("");
+      setPasswordError("");
+    } else {
+      setPasswordError("Incorrect password");
+      setPasswordInput("");
+    }
+  };
 
   const downloadJSON = () => {
     const dataStr = JSON.stringify(guests, null, 2);
@@ -21,6 +87,9 @@ function GuestListModal({ guests, onClose, onClearAll }) {
     URL.revokeObjectURL(url);
   };
 
+  const displayEmail = (email) => (isAdmin ? email : maskEmail(email));
+  const displayPhone = (phone) => (isAdmin ? phone : maskPhone(phone));
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -28,6 +97,62 @@ function GuestListModal({ guests, onClose, onClearAll }) {
           ×
         </button>
         <h3 className="modal-title">Guest List</h3>
+
+        <div className="admin-toggle">
+          {isAdmin ? (
+            <button
+              type="button"
+              className="btn btn-admin-logout"
+              onClick={handleAdminToggle}
+            >
+              🔓 Admin View (Logout)
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-admin-login"
+              onClick={handleAdminToggle}
+            >
+              🔒 Admin Login
+            </button>
+          )}
+        </div>
+
+        {showPasswordPrompt && (
+          <div className="password-prompt">
+            <form onSubmit={handlePasswordSubmit}>
+              <label htmlFor="admin-password">Enter Admin Password</label>
+              <div className="password-input-row">
+                <input
+                  id="admin-password"
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Password"
+                  autoFocus
+                />
+                <button type="submit" className="btn btn-small">
+                  Unlock
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-small btn-cancel"
+                  onClick={() => {
+                    setShowPasswordPrompt(false);
+                    setPasswordInput("");
+                    setPasswordError("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+              {passwordError && (
+                <p className="password-error">{passwordError}</p>
+              )}
+            </form>
+          </div>
+        )}
+
         <div className="modal-stats">
           <div className="stat-box">
             <span className="stat-num">{attending.length}</span>
@@ -43,7 +168,7 @@ function GuestListModal({ guests, onClose, onClearAll }) {
           </div>
         </div>
 
-        {/* {guests.length > 0 && (
+        {guests.length > 0 && isAdmin && (
           <div className="modal-actions">
             <button
               type="button"
@@ -66,7 +191,7 @@ function GuestListModal({ guests, onClose, onClearAll }) {
               🗑️ Clear All
             </button>
           </div>
-        )} */}
+        )}
 
         {guests.length === 0 ? (
           <p className="no-guests">No RSVPs yet. Be the first to respond!</p>
@@ -93,7 +218,14 @@ function GuestListModal({ guests, onClose, onClearAll }) {
                           {guest.guestCount > 1 ? "s" : ""}
                         </span>
                       </div>
-                      <span className="guest-email">✉ {guest.email}</span>
+                      <span className="guest-email">
+                        ✉ {displayEmail(guest.email)}
+                      </span>
+                      {guest.phone && (
+                        <span className="guest-phone">
+                          📞 {displayPhone(guest.phone)}
+                        </span>
+                      )}
                       {guest.message && (
                         <p className="guest-message">"{guest.message}"</p>
                       )}
@@ -119,7 +251,14 @@ function GuestListModal({ guests, onClose, onClearAll }) {
                       <div className="guest-header">
                         <span className="guest-name">{guest.name}</span>
                       </div>
-                      <span className="guest-email">✉ {guest.email}</span>
+                      <span className="guest-email">
+                        ✉ {displayEmail(guest.email)}
+                      </span>
+                      {guest.phone && (
+                        <span className="guest-phone">
+                          📞 {displayPhone(guest.phone)}
+                        </span>
+                      )}
                       {guest.message && (
                         <p className="guest-message">"{guest.message}"</p>
                       )}
@@ -139,48 +278,67 @@ export default function Rsvp() {
   const [sent, setSent] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [attending, setAttending] = useState("");
   const [guestCount, setGuestCount] = useState(1);
   const [message, setMessage] = useState("");
   const [guests, setGuests] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // Load guests from JSON file on mount
+  // Load guests from localStorage on mount
   useEffect(() => {
-    fetch("/api/guests")
-      .then((res) => res.json())
-      .then((data) => setGuests(data))
-      .catch(() => setGuests([]));
+    try {
+      const storedGuests = localStorage.getItem(STORAGE_KEY);
+      if (storedGuests) {
+        setGuests(JSON.parse(storedGuests));
+      }
+      const adminStatus = localStorage.getItem(ADMIN_KEY);
+      if (adminStatus === "true") {
+        setIsAdmin(true);
+      }
+    } catch (error) {
+      console.error("Error loading guests from localStorage:", error);
+      setGuests([]);
+    }
   }, []);
 
-  // Save guests to JSON file
-  const saveGuests = async (updatedGuests) => {
+  // Save guests to localStorage
+  const saveGuests = (updatedGuests) => {
     setGuests(updatedGuests);
-    await fetch("/api/guests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedGuests),
-    });
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedGuests));
+    } catch (error) {
+      console.error("Error saving guests to localStorage:", error);
+    }
   };
 
-  const handleSubmit = async (e) => {
+  // Toggle admin mode
+  const toggleAdmin = () => {
+    const newAdminStatus = !isAdmin;
+    setIsAdmin(newAdminStatus);
+    localStorage.setItem(ADMIN_KEY, newAdminStatus.toString());
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     const newGuest = {
       name,
       email,
+      phone,
       attending,
       guestCount: Number.parseInt(guestCount, 10),
       message,
       registeredAt: new Date().toISOString(),
     };
 
-    await saveGuests([...guests, newGuest]);
+    saveGuests([...guests, newGuest]);
     setSent(true);
   };
 
-  const clearAllGuests = async () => {
-    await saveGuests([]);
+  const clearAllGuests = () => {
+    saveGuests([]);
     setShowModal(false);
   };
 
@@ -225,6 +383,7 @@ export default function Rsvp() {
               setSent(false);
               setName("");
               setEmail("");
+              setPhone("");
               setAttending("");
               setGuestCount(1);
               setMessage("");
@@ -256,6 +415,17 @@ export default function Rsvp() {
               placeholder="you@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="phone">Phone Number</label>
+            <input
+              id="phone"
+              type="tel"
+              required
+              placeholder="+91 98765 43210"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
             />
           </div>
           <div>
@@ -305,6 +475,8 @@ export default function Rsvp() {
           guests={guests}
           onClose={() => setShowModal(false)}
           onClearAll={clearAllGuests}
+          isAdmin={isAdmin}
+          onToggleAdmin={toggleAdmin}
         />
       )}
     </section>
