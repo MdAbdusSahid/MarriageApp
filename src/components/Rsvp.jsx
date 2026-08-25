@@ -89,9 +89,13 @@ function GuestListModal({
     const file = e.target.files?.[0];
     if (file) {
       importGuestsJSON(file)
-        .then((count) => {
-          alert(`Successfully imported ${count} guests`);
-          window.location.reload();
+        .then(async (count) => {
+          alert(`Successfully imported ${count} guests\n\n` +
+                `Note: To persist across devices, replace public/guests.json with this file and redeploy.`);
+          // Reload guests
+          const updatedGuests = await getGuests();
+          updatedGuests.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+          setGuests(updatedGuests);
         })
         .catch((error) => {
           alert(`Failed to import: ${error.message}`);
@@ -345,9 +349,9 @@ export default function Rsvp() {
   const [guests, setGuests] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load guests from localStorage and subscribe to changes
+  // Load guests from JSON file and subscribe to changes
   useEffect(() => {
     // Load admin status from localStorage
     const adminStatus = localStorage.getItem(ADMIN_KEY);
@@ -356,15 +360,22 @@ export default function Rsvp() {
     }
 
     // Load initial guests
-    const loadGuests = () => {
-      const guestsData = getGuests();
-      guestsData.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
-      setGuests(guestsData);
+    const loadGuests = async () => {
+      try {
+        setLoading(true);
+        const guestsData = await getGuests();
+        guestsData.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+        setGuests(guestsData);
+      } catch (error) {
+        console.error('Error loading guests:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadGuests();
 
-    // Subscribe to changes (for cross-tab sync)
+    // Subscribe to changes (polls every 30 seconds)
     const unsubscribe = subscribeToChanges(loadGuests);
 
     return () => unsubscribe();
@@ -377,7 +388,7 @@ export default function Rsvp() {
     localStorage.setItem(ADMIN_KEY, newAdminStatus.toString());
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
@@ -391,11 +402,11 @@ export default function Rsvp() {
     };
 
     try {
-      const newGuest = addGuest(newGuestData);
+      const newGuest = await addGuest(newGuestData);
       console.log("Guest added successfully with ID:", newGuest.id);
       
       // Update local state
-      const updatedGuests = getGuests();
+      const updatedGuests = await getGuests();
       updatedGuests.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
       setGuests(updatedGuests);
       
@@ -408,9 +419,9 @@ export default function Rsvp() {
     }
   };
 
-  const clearAllGuests = () => {
+  const clearAllGuests = async () => {
     try {
-      clearAllGuestsFromStorage();
+      await clearAllGuestsFromStorage();
       setGuests([]);
       setShowModal(false);
     } catch (error) {
@@ -419,9 +430,9 @@ export default function Rsvp() {
     }
   };
 
-  const deleteGuest = (guestId) => {
+  const deleteGuest = async (guestId) => {
     try {
-      deleteGuestFromStorage(guestId);
+      await deleteGuestFromStorage(guestId);
       setGuests(guests.filter(g => g.id !== guestId));
     } catch (error) {
       console.error("Error deleting guest:", error);
