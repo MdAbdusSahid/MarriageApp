@@ -391,18 +391,15 @@ export default function Rsvp() {
     };
 
     try {
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Request timed out")), 10000)
-      );
-      
-      const addPromise = addDoc(collection(db, GUESTS_COLLECTION), newGuest);
-      
-      await Promise.race([addPromise, timeoutPromise]);
+      console.log("Attempting to add guest to Firestore...");
+      const docRef = await addDoc(collection(db, GUESTS_COLLECTION), newGuest);
+      console.log("Guest added successfully with ID:", docRef.id);
       setSent(true);
     } catch (error) {
       console.error("Error adding guest:", error);
-      alert(`Failed to submit RSVP: ${error.message || "Unknown error"}. Please check Firestore rules are set correctly.`);
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      alert(`Failed to submit RSVP: ${error.code || error.message || "Check console for details"}`);
     } finally {
       setSubmitting(false);
     }
