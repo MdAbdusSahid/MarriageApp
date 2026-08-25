@@ -50,14 +50,55 @@ export const addGuest = async (guestData) => {
 
 // Delete a guest by ID
 export const deleteGuest = async (guestId) => {
-  const guests = await getGuests();
-  const filtered = guests.filter((g) => g.id !== guestId);
-  return await saveGuests(filtered);
+  try {
+    // Delete from MongoDB via API
+    const response = await fetch(`${GUESTS_API}?id=${guestId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete guest');
+    }
+    
+    // Update local cache
+    const guests = await getGuests();
+    const filtered = guests.filter((g) => g.id !== guestId);
+    await saveGuests(filtered);
+    
+    // Clear cache to force refresh on next read
+    localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting guest:', error);
+    // Fallback to local deletion
+    const guests = await getGuests();
+    const filtered = guests.filter((g) => g.id !== guestId);
+    return await saveGuests(filtered);
+  }
 };
 
 // Clear all guests
 export const clearAllGuests = async () => {
-  return await saveGuests([]);
+  try {
+    // Clear from MongoDB via API
+    const response = await fetch(`${GUESTS_API}?action=clear`, {
+      method: 'PUT',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to clear guests');
+    }
+    
+    // Clear local cache
+    await saveGuests([]);
+    localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+    
+    return true;
+  } catch (error) {
+    console.error('Error clearing guests:', error);
+    return await saveGuests([]);
+  }
 };
 
 // Export guests as JSON file (backup purposes)
