@@ -1,10 +1,22 @@
 import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
 import { HeartIcon, Flourish } from "./Icons";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+  getDocs,
+  writeBatch,
+} from "firebase/firestore";
 
-const STORAGE_KEY = "wedding_guests";
 const ADMIN_KEY = "wedding_admin";
 const ADMIN_PASSWORD = "sahidwedding2026"; // Change this to your desired password
+const GUESTS_COLLECTION = "wedding_guests";
 
 // Helper functions to mask sensitive data
 const maskEmail = (email) => {
@@ -206,7 +218,7 @@ function GuestListModal({
                 <ul>
                   {attending.map((guest, index) => (
                     <li
-                      key={guest.email + guest.registeredAt}
+                      key={guest.id}
                       className="guest-item"
                       style={{
                         animationDelay: `${index * 0.1}s`,
@@ -229,10 +241,7 @@ function GuestListModal({
                                     `Remove ${guest.name} from the guest list?`,
                                   )
                                 ) {
-                                  onDeleteGuest(
-                                    guest.email,
-                                    guest.registeredAt,
-                                  );
+                                  onDeleteGuest(guest.id);
                                 }
                               }}
                               title="Remove guest"
@@ -266,7 +275,7 @@ function GuestListModal({
                 <ul>
                   {declining.map((guest, index) => (
                     <li
-                      key={guest.email + guest.registeredAt}
+                      key={guest.id}
                       className="guest-item declined"
                       style={{
                         animationDelay: `${(attending.length + index) * 0.1}s`,
@@ -284,7 +293,7 @@ function GuestListModal({
                                   `Remove ${guest.name} from the guest list?`,
                                 )
                               ) {
-                                onDeleteGuest(guest.email, guest.registeredAt);
+                                onDeleteGuest(guest.id);
                               }
                             }}
                             title="Remove guest"
@@ -327,33 +336,41 @@ export default function Rsvp() {
   const [guests, setGuests] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load guests from localStorage on mount
+  // Real-time sync with Firestore
   useEffect(() => {
-    try {
-      const storedGuests = localStorage.getItem(STORAGE_KEY);
-      if (storedGuests) {
-        setGuests(JSON.parse(storedGuests));
-      }
-      const adminStatus = localStorage.getItem(ADMIN_KEY);
-      if (adminStatus === "true") {
-        setIsAdmin(true);
-      }
-    } catch (error) {
-      console.error("Error loading guests from localStorage:", error);
-      setGuests([]);
+    // Load admin status from localStorage (admin is local only)
+    const adminStatus = localStorage.getItem(ADMIN_KEY);
+    if (adminStatus === "true") {
+      setIsAdmin(true);
     }
-  }, []);
 
-  // Save guests to localStorage
-  const saveGuests = (updatedGuests) => {
-    setGuests(updatedGuests);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedGuests));
-    } catch (error) {
-      console.error("Error saving guests to localStorage:", error);
-    }
-  };
+    // Subscribe to Firestore guests collection for real-time updates
+    const guestsQuery = query(
+      collection(db, GUESTS_COLLECTION),
+      orderBy("registeredAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(
+      guestsQuery,
+      (snapshot) => {
+        const guestsData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setGuests(guestsData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching guests:", error);
+        setLoading(false);
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   // Toggle admin mode
   const toggleAdmin = () => {
@@ -362,7 +379,7 @@ export default function Rsvp() {
     localStorage.setItem(ADMIN_KEY, newAdminStatus.toString());
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newGuest = {
@@ -375,20 +392,37 @@ export default function Rsvp() {
       registeredAt: new Date().toISOString(),
     };
 
-    saveGuests([...guests, newGuest]);
-    setSent(true);
+    try {
+      await addDoc(collection(db, GUESTS_COLLECTION), newGuest);
+      setSent(true);
+    } catch (error) {
+      console.error("Error adding guest:", error);
+      alert("Failed to submit RSVP. Please try again.");
+    }
   };
 
-  const clearAllGuests = () => {
-    saveGuests([]);
-    setShowModal(false);
+  const clearAllGuests = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, GUESTS_COLLECTION));
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((docItem) => {
+        batch.delete(doc(db, GUESTS_COLLECTION, docItem.id));
+      });
+      await batch.commit();
+      setShowModal(false);
+    } catch (error) {
+      console.error("Error clearing guests:", error);
+      alert("Failed to clear guests. Please try again.");
+    }
   };
 
-  const deleteGuest = (email, registeredAt) => {
-    const updatedGuests = guests.filter(
-      (g) => !(g.email === email && g.registeredAt === registeredAt),
-    );
-    saveGuests(updatedGuests);
+  const deleteGuest = async (guestId) => {
+    try {
+      await deleteDoc(doc(db, GUESTS_COLLECTION, guestId));
+    } catch (error) {
+      console.error("Error deleting guest:", error);
+      alert("Failed to remove guest. Please try again.");
+    }
   };
 
   return (
@@ -411,7 +445,7 @@ export default function Rsvp() {
           onClick={() => setShowModal(true)}
           style={{ marginTop: "1rem" }}
         >
-          View Guest List ({guests.length})
+          View Guest List ({loading ? "..." : guests.length})
         </button>
       </Reveal>
 
