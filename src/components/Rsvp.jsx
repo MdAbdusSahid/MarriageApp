@@ -8,8 +8,6 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
-  query,
-  orderBy,
   getDocs,
   writeBatch,
 } from "firebase/firestore";
@@ -327,6 +325,7 @@ function GuestListModal({
 
 export default function Rsvp() {
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -347,23 +346,21 @@ export default function Rsvp() {
     }
 
     // Subscribe to Firestore guests collection for real-time updates
-    const guestsQuery = query(
-      collection(db, GUESTS_COLLECTION),
-      orderBy("registeredAt", "desc")
-    );
-
     const unsubscribe = onSnapshot(
-      guestsQuery,
+      collection(db, GUESTS_COLLECTION),
       (snapshot) => {
-        const guestsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const guestsData = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
         }));
+        // Sort by registeredAt descending (newest first)
+        guestsData.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
         setGuests(guestsData);
         setLoading(false);
       },
       (error) => {
         console.error("Error fetching guests:", error);
+        alert("Error connecting to database. Check Firestore rules.");
         setLoading(false);
       }
     );
@@ -381,6 +378,7 @@ export default function Rsvp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
 
     const newGuest = {
       name,
@@ -393,11 +391,20 @@ export default function Rsvp() {
     };
 
     try {
-      await addDoc(collection(db, GUESTS_COLLECTION), newGuest);
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Request timed out")), 10000)
+      );
+      
+      const addPromise = addDoc(collection(db, GUESTS_COLLECTION), newGuest);
+      
+      await Promise.race([addPromise, timeoutPromise]);
       setSent(true);
     } catch (error) {
       console.error("Error adding guest:", error);
-      alert("Failed to submit RSVP. Please try again.");
+      alert(`Failed to submit RSVP: ${error.message || "Unknown error"}. Please check Firestore rules are set correctly.`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -547,8 +554,8 @@ export default function Rsvp() {
               onChange={(e) => setMessage(e.target.value)}
             ></textarea>
           </div>
-          <button type="submit" className="btn">
-            Send RSVP
+          <button type="submit" className="btn" disabled={submitting}>
+            {submitting ? "Sending..." : "Send RSVP"}
           </button>
         </form>
       )}
