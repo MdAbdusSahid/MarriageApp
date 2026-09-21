@@ -90,11 +90,15 @@ function GuestListModal({
     if (file) {
       importGuestsJSON(file)
         .then(async (count) => {
-          alert(`Successfully imported ${count} guests\n\n` +
-                `Note: To persist across devices, replace public/guests.json with this file and redeploy.`);
+          alert(
+            `Successfully imported ${count} guests\n\n` +
+              `Note: To persist across devices, replace public/guests.json with this file and redeploy.`,
+          );
           // Reload guests
           const updatedGuests = await getGuests();
-          updatedGuests.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+          updatedGuests.sort(
+            (a, b) => new Date(b.registeredAt) - new Date(a.registeredAt),
+          );
           setGuests(updatedGuests);
         })
         .catch((error) => {
@@ -199,7 +203,7 @@ function GuestListModal({
                 type="file"
                 accept=".json"
                 onChange={handleImportJSON}
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
               />
             </label>
             <button
@@ -364,10 +368,12 @@ export default function Rsvp() {
       try {
         setLoading(true);
         const guestsData = await getGuests();
-        guestsData.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+        guestsData.sort(
+          (a, b) => new Date(b.registeredAt) - new Date(a.registeredAt),
+        );
         setGuests(guestsData);
       } catch (error) {
-        console.error('Error loading guests:', error);
+        console.error("Error loading guests:", error);
       } finally {
         setLoading(false);
       }
@@ -404,12 +410,14 @@ export default function Rsvp() {
     try {
       const newGuest = await addGuest(newGuestData);
       console.log("Guest added successfully with ID:", newGuest.id);
-      
+
       // Update local state
       const updatedGuests = await getGuests();
-      updatedGuests.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+      updatedGuests.sort(
+        (a, b) => new Date(b.registeredAt) - new Date(a.registeredAt),
+      );
       setGuests(updatedGuests);
-      
+
       setSent(true);
     } catch (error) {
       console.error("Error adding guest:", error);
@@ -433,7 +441,7 @@ export default function Rsvp() {
   const deleteGuest = async (guestId) => {
     try {
       await deleteGuestFromStorage(guestId);
-      setGuests(guests.filter(g => g.id !== guestId));
+      setGuests(guests.filter((g) => g.id !== guestId));
     } catch (error) {
       console.error("Error deleting guest:", error);
       alert("Failed to remove guest. Please try again.");
@@ -450,7 +458,7 @@ export default function Rsvp() {
           <Flourish />
           <span></span>
         </div>
-        <p className="lead" style={{ color: "#e9e2d9" }}>
+        <p className="lead" style={{ color: "var(--muted)" }}>
           Kindly respond before November 15, 2026 so we can save you a seat at
           our table.
         </p>
@@ -467,10 +475,10 @@ export default function Rsvp() {
       {sent ? (
         <div className="thankyou">
           <HeartIcon className="heart" />
-          <h3 style={{ color: "#fff", fontSize: "1.8rem" }}>
+          <h3 style={{ color: "var(--ink)", fontSize: "1.8rem" }}>
             Thank you{name ? `, ${name}` : ""}!
           </h3>
-          <p style={{ color: "#e9e2d9" }}>
+          <p style={{ color: "var(--muted)" }}>
             Your response has been received. We can't wait to celebrate with
             you.
           </p>

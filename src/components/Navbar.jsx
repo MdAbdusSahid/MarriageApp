@@ -2,6 +2,33 @@ import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [dark, setDark] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("theme");
+    if (saved) return saved === "dark";
+    return true; // Dark mode is the default.
+  });
+
+  useEffect(() => {
+    const theme = dark ? "dark" : "light";
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [dark]);
+
+  const toggleTheme = (e) => {
+    // Anchor the heart-shaped reveal at the button that was clicked.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    document.documentElement.style.setProperty("--reveal-x", `${x}px`);
+    document.documentElement.style.setProperty("--reveal-y", `${y}px`);
+
+    if (!document.startViewTransition) {
+      setDark((d) => !d);
+      return;
+    }
+    document.startViewTransition(() => setDark((d) => !d));
+  };
 
   useEffect(() => {
     let ticking = false;
@@ -28,6 +55,17 @@ export default function Navbar() {
       <a href="#events">Events</a>
       <a href="#gallery">Gallery</a>
       <a href="#rsvp">RSVP</a>
+      <button
+        className={`theme-toggle ${dark ? "is-dark" : ""}`}
+        onClick={toggleTheme}
+        aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+        aria-pressed={dark}
+        title={dark ? "Light mode" : "Dark mode"}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z" />
+        </svg>
+      </button>
     </nav>
   );
 }
