@@ -24,11 +24,19 @@ export default function Navbar() {
     document.documentElement.style.setProperty("--reveal-x", `${x}px`);
     document.documentElement.style.setProperty("--reveal-y", `${y}px`);
 
-    if (!document.startViewTransition) {
-      setDark((d) => !d);
+    const flip = () => setDark((d) => !d);
+
+    // View Transitions API isn't supported on many mobile browsers (e.g. iOS
+    // Safari). Fall back to a plain toggle so the theme always switches.
+    if (typeof document.startViewTransition !== "function") {
+      flip();
       return;
     }
-    document.startViewTransition(() => setDark((d) => !d));
+    try {
+      document.startViewTransition(flip);
+    } catch {
+      flip();
+    }
   };
 
   useEffect(() => {
@@ -50,6 +58,26 @@ export default function Navbar() {
   }, []);
 
   const closeMenu = () => setMenuOpen(false);
+
+  // Close the mobile menu when tapping/clicking anywhere outside the nav,
+  // pressing Escape, or scrolling the page.
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handlePointer = (e) => {
+      if (!e.target.closest(".nav")) setMenuOpen(false);
+    };
+    const handleKey = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointer);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointer);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [menuOpen]);
 
   return (
     <nav
