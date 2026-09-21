@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [dark, setDark] = useState(() => {
     if (typeof window === "undefined") return true;
     const saved = localStorage.getItem("theme");
@@ -48,24 +49,54 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
-      <a href="#home">Home</a>
-      <a href="#story">Our Story</a>
-      <a href="#events">Events</a>
-      <a href="#gallery">Gallery</a>
-      <a href="#rsvp">RSVP</a>
-      <button
-        className={`theme-toggle ${dark ? "is-dark" : ""}`}
-        onClick={toggleTheme}
-        aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-        aria-pressed={dark}
-        title={dark ? "Light mode" : "Dark mode"}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z" />
-        </svg>
-      </button>
+    <nav
+      className={`nav ${scrolled ? "scrolled" : ""} ${menuOpen ? "open" : ""}`}
+    >
+      <div className={`nav-links ${menuOpen ? "open" : ""}`}>
+        <a href="#home" onClick={closeMenu}>
+          Home
+        </a>
+        <a href="#story" onClick={closeMenu}>
+          Our Story
+        </a>
+        <a href="#events" onClick={closeMenu}>
+          Events
+        </a>
+        <a href="#gallery" onClick={closeMenu}>
+          Gallery
+        </a>
+        <a href="#rsvp" onClick={closeMenu}>
+          RSVP
+        </a>
+      </div>
+
+      <div className="nav-actions">
+        <button
+          className={`theme-toggle ${dark ? "is-dark" : ""}`}
+          onClick={toggleTheme}
+          aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+          aria-pressed={dark}
+          title={dark ? "Light mode" : "Dark mode"}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z" />
+          </svg>
+        </button>
+
+        <button
+          className={`nav-toggle ${menuOpen ? "open" : ""}`}
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
     </nav>
   );
 }
