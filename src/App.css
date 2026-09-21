@@ -152,6 +152,48 @@
 .nav a:active {
   transform: translateY(0) scale(0.98);
 }
+
+/* ===== THEME TOGGLE - Cute heart button ===== */
+.theme-toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  transition: transform 0.4s var(--ease-spring);
+}
+.theme-toggle svg {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.4s var(--ease-spring), fill 0.4s var(--ease-smooth);
+  fill: none;
+  stroke: var(--pink);
+  stroke-width: 2;
+  filter: drop-shadow(0 2px 4px rgba(244, 165, 184, 0.4));
+}
+.theme-toggle.is-dark svg {
+  fill: var(--pink);
+  stroke: var(--pink);
+}
+.theme-toggle:hover {
+  transform: scale(1.15) rotate(-6deg);
+}
+.theme-toggle:hover svg {
+  transform: scale(1.05);
+  animation: heartbeat 0.8s var(--ease-spring) infinite;
+}
+.theme-toggle:active {
+  transform: scale(0.9);
+}
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.12); }
+  50% { transform: scale(0.98); }
+  75% { transform: scale(1.08); }
+}
 @media (max-width: 640px) {
   .nav {
     gap: 1rem;
@@ -159,6 +201,10 @@
   .nav a {
     font-size: 0.62rem;
     letter-spacing: 1px;
+  }
+  .theme-toggle svg {
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -176,7 +222,35 @@
     radial-gradient(ellipse at 50% 0%, rgba(92, 122, 158, 0.2) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(244, 165, 184, 0.25) 0%, transparent 40%),
     radial-gradient(ellipse at 20% 90%, rgba(61, 90, 128, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 50% 30%, #fff 0%, var(--pink-soft) 60%, var(--cream) 100%);
+    linear-gradient(180deg, var(--pink-soft) 0%, var(--cream) 100%);
+}
+
+/* Heart-shaped glow spotlight behind the names - sized to hero height */
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 55vh;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 240, 243, 0.3) 40%, transparent 70%);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z'/%3E%3C/svg%3E") no-repeat center / contain;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.7;
+  animation: heartGlowPulse 4s var(--ease-smooth) infinite;
+}
+
+@keyframes heartGlowPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+  50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.8; }
+}
+
+[data-theme="dark"] .hero::after {
+  background: radial-gradient(circle at 50% 45%, rgba(244, 165, 184, 0.35) 0%, rgba(127, 165, 212, 0.22) 45%, transparent 72%);
+  opacity: 0.85;
 }
 
 /* Animated gradient overlay */
@@ -263,6 +337,16 @@
 }
 .hero .names:last-of-type {
   animation-delay: 0.9s;
+}
+
+[data-theme="dark"] .hero .names {
+  background: linear-gradient(135deg, #fbe3ea, var(--royal-blue-light), var(--pink));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.4),
+    0 2px 12px rgba(244, 165, 184, 0.3);
 }
 
 @keyframes nameReveal {
@@ -403,10 +487,10 @@
 /* ===== COUNTDOWN - Elegant glassmorphism cards ===== */
 .countdown {
   text-align: center;
-  background: 
-    linear-gradient(135deg, rgba(61, 90, 128, 0.95) 0%, rgba(92, 122, 158, 0.95) 100%),
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f4a5b8' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  color: #fff;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(244, 165, 184, 0.12) 0%, transparent 55%),
+    var(--cream);
+  color: var(--ink);
   position: relative;
   overflow: hidden;
 }
@@ -430,10 +514,10 @@
 }
 
 .countdown .script {
-  color: var(--pink-light);
+  color: var(--rose);
 }
 .countdown h2 {
-  color: #fff;
+  color: var(--ink);
 }
 .count-grid {
   display: flex;
@@ -447,9 +531,10 @@
 .count-box {
   min-width: 110px;
   padding: 1.5rem 1rem;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white);
   border: 1px solid rgba(244, 165, 184, 0.4);
   border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: all 0.5s var(--ease-spring);
@@ -470,9 +555,8 @@
 
 .count-box:hover {
   transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  border-color: var(--pink-light);
-  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  border-color: var(--pink);
 }
 
 .count-box:hover::before {
@@ -483,7 +567,7 @@
   font-family: var(--font-serif);
   font-size: 3rem;
   line-height: 1;
-  color: var(--pink-light);
+  color: var(--royal-blue);
   transition: all 0.3s var(--ease-spring);
 }
 
@@ -497,13 +581,14 @@
   letter-spacing: 2px;
   font-size: 0.7rem;
   margin-top: 0.5rem;
-  color: #e9e2d9;
+  color: var(--muted);
 }
 
 /* ===== STORY - Timeline with smooth animations ===== */
 .story {
-  background: 
-    linear-gradient(180deg, #fff 0%, var(--pink-soft) 100%);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(244, 165, 184, 0.12) 0%, transparent 55%),
+    var(--cream);
   text-align: center;
   position: relative;
 }
@@ -639,10 +724,10 @@
 
 /* ===== DETAILS / EVENTS - 3D card effects ===== */
 .details {
-  background: 
-    radial-gradient(ellipse at 30% 20%, rgba(92, 122, 158, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 80%, rgba(244, 165, 184, 0.2) 0%, transparent 50%),
-    var(--pink-soft);
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(92, 122, 158, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 80%, rgba(244, 165, 184, 0.12) 0%, transparent 55%),
+    var(--cream);
   text-align: center;
 }
 .event-grid {
@@ -756,8 +841,9 @@
 
 /* ===== GALLERY - Masonry-style with zoom effects ===== */
 .gallery {
-  background: 
-    linear-gradient(180deg, var(--pink-soft) 0%, #fff 50%, var(--cream) 100%);
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(244, 165, 184, 0.12) 0%, transparent 55%),
+    var(--cream);
   text-align: center;
   position: relative;
 }
@@ -832,11 +918,10 @@
 /* ===== RSVP - Premium form design ===== */
 .rsvp {
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(61, 90, 128, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(244, 165, 184, 0.15) 0%, transparent 50%),
-    linear-gradient(rgba(44, 62, 80, 0.94), rgba(44, 74, 110, 0.94)),
-    radial-gradient(circle at top, #5c7a9e, #2c4a6e);
-  color: #fff;
+    radial-gradient(ellipse at 20% 20%, rgba(61, 90, 128, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(244, 165, 184, 0.12) 0%, transparent 55%),
+    var(--cream);
+  color: var(--ink);
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -854,10 +939,10 @@
 }
 
 .rsvp .script {
-  color: var(--pink-light);
+  color: var(--rose);
 }
 .rsvp h2 {
-  color: #fff;
+  color: var(--ink);
 }
 .rsvp form {
   max-width: 520px;
@@ -872,7 +957,7 @@
   font-size: 0.72rem;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--pink-light);
+  color: var(--rose);
   margin-bottom: 0.4rem;
   display: block;
   transition: color 0.3s ease;
@@ -883,32 +968,29 @@
   width: 100%;
   padding: 1rem 1.2rem;
   border: 1px solid rgba(244, 165, 184, 0.35);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--white);
   border-radius: 14px;
-  color: #fff;
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: 0.95rem;
   transition: all 0.4s var(--ease-spring);
-  backdrop-filter: blur(10px);
 }
 
 .rsvp input:hover,
 .rsvp select:hover,
 .rsvp textarea:hover {
   border-color: rgba(244, 165, 184, 0.55);
-  background: rgba(255, 255, 255, 0.07);
 }
 
 .rsvp input::placeholder,
 .rsvp textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--muted);
 }
 .rsvp input:focus,
 .rsvp select:focus,
 .rsvp textarea:focus {
   outline: none;
-  border-color: var(--pink-light);
-  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--pink);
   box-shadow: 0 0 0 4px rgba(244, 165, 184, 0.2);
   transform: translateY(-2px);
 }
@@ -975,11 +1057,11 @@
   max-width: 520px;
   margin: 2rem auto 0;
   padding: 3rem;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white);
   border: 1px solid rgba(244, 165, 184, 0.4);
   border-radius: 24px;
   animation: thankYouPop 0.6s var(--ease-spring) both;
-  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 1;
 }
@@ -1716,8 +1798,8 @@
 
 .btn-outline {
   background: transparent;
-  border: 2px solid var(--pink-light);
-  color: var(--pink-light);
+  border: 2px solid var(--pink);
+  color: var(--rose);
   box-shadow: none;
 }
 
@@ -1773,4 +1855,43 @@
     font-size: 0.75rem;
     padding: 0.6rem 1.2rem;
   }
+}
+
+/* ===== DARK MODE OVERRIDES ===== */
+/* Section backgrounds now use var(--cream) as their base, so Story, Events
+   and Gallery flow seamlessly as one continuous page in both themes.
+   Only surfaces that used hardcoded light colors need dark-mode fixes. */
+
+/* Navbar: light bar -> dark translucent */
+[data-theme="dark"] .nav {
+  background: rgba(20, 24, 31, 0);
+}
+[data-theme="dark"] .nav.scrolled {
+  background: rgba(20, 24, 31, 0.85);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Story cards: white -> dark surface */
+[data-theme="dark"] .story-item .card {
+  background: var(--white);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Event cards: white -> dark surface */
+[data-theme="dark"] .event-card {
+  background: var(--white);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(127, 165, 212, 0.15);
+}
+[data-theme="dark"] .event-card:hover {
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(127, 165, 212, 0.35);
+}
+
+/* Footer uses --ink (light in dark mode) -> pin to dark gradient */
+[data-theme="dark"] .footer {
+  background: linear-gradient(135deg, #0f141b 0%, #16212d 100%);
+  color: #c4d4e4;
 }

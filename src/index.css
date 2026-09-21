@@ -38,6 +38,51 @@
   --duration-slower: 0.8s;
 }
 
+/* Heart-shaped theme reveal (View Transitions API) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+@keyframes heart-reveal {
+  from {
+    clip-path: path("M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z");
+    transform: translate(var(--reveal-x, 50vw), var(--reveal-y, 50vh)) translate(-12px, -12px) scale(0);
+  }
+  to {
+    clip-path: path("M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z");
+    transform: translate(var(--reveal-x, 50vw), var(--reveal-y, 50vh)) translate(-12px, -12px) scale(220);
+  }
+}
+::view-transition-new(root) {
+  z-index: 9999;
+  animation: heart-reveal 0.7s var(--ease-out) forwards;
+  transform-origin: 12px 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root),
+  ::view-transition-old(root) {
+    animation: none;
+  }
+}
+
+/* Dark mode palette */
+[data-theme="dark"] {
+  --royal-blue: #7fa5d4;
+  --royal-blue-light: #9db9e0;
+  --royal-blue-dark: #6b93c4;
+  --pink: #f4a5b8;
+  --pink-light: #7a4a56;
+  --pink-soft: #2a1f24;
+  --cream: #14181f;
+  --ink: #e8ecf2;
+  --muted: #9aa7b5;
+  --white: #1c2129;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -55,6 +100,7 @@ body {
   overflow-x: hidden;
   line-height: 1.6;
   font-weight: 300;
+  transition: background 0.5s var(--ease-smooth), color 0.5s var(--ease-smooth);
 }
 
 h1,
