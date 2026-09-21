@@ -11,6 +11,13 @@
       rel="stylesheet"
     />
     <title>Aisha &amp; Rayan — Wedding Invitation</title>
+    <script>
+      // Apply theme before render to avoid a flash. Default is dark.
+      (function () {
+        var saved = localStorage.getItem("theme");
+        document.documentElement.dataset.theme = saved || "dark";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
