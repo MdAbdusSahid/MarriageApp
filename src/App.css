@@ -313,23 +313,25 @@
   height: 55vh;
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 240, 243, 0.3) 40%, transparent 70%);
+  /* Light mode: warm pink glow so the heart reads clearly on the pale background */
+  background: radial-gradient(circle at 50% 42%, rgba(244, 165, 184, 0.55) 0%, rgba(244, 165, 184, 0.28) 45%, transparent 72%);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z'/%3E%3C/svg%3E") no-repeat center / contain;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 21s-7.5-4.9-10-9.4C.7 8.9 1.9 5.5 5 4.6c2-.6 3.9.2 5 1.8 1.1-1.6 3-2.4 5-1.8 3.1.9 4.3 4.3 3 7C19.5 16.1 12 21 12 21z'/%3E%3C/svg%3E") no-repeat center / contain;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.7;
+  opacity: 0.55;
   animation: heartGlowPulse 4s var(--ease-smooth) infinite;
 }
 
 @keyframes heartGlowPulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-  50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.8; }
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.7; }
 }
 
 [data-theme="dark"] .hero::after {
-  background: radial-gradient(circle at 50% 45%, rgba(244, 165, 184, 0.35) 0%, rgba(127, 165, 212, 0.22) 45%, transparent 72%);
-  opacity: 0.85;
+  /* Single, evenly-lit pink heart so it reads as one clear shape, not two overlapping lobes */
+  background: radial-gradient(circle at 50% 42%, rgba(244, 165, 184, 0.4) 0%, rgba(244, 165, 184, 0.22) 50%, transparent 74%);
+  opacity: 0.75;
 }
 
 /* Animated gradient overlay */
